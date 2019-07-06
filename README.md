@@ -19,7 +19,7 @@ For this project, we specifically choose the latest white_box attack method [Rob
         * --gpu: choose GPU index, use 0 if you only have one.
 
 
-* The final results will be written into results.txt in the white_box and black_box folders. The attack index 1,2,3 corresponds to the FGSM, RANDFGSM and CW attack.
+* The final results will be written into results.txt in the white_box folders.
 
 
 ## Citations
