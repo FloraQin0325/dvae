@@ -19,7 +19,7 @@ parser.add_argument('--cnn-epochs', type=int, default=20)
 parser.add_argument('--imagepath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/cropped_training/')### 32*32 original image path
 parser.add_argument('--advpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
 parser.add_argument('--labelpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/labels/')### the ground truth labels of 32*32 original image path
-parser.add_argument('--savedir',  type=str, default='/home/floraqin/Documents/defense-vae/training_data/')### x,y,adv_x save diretory
+parser.add_argument('--savedir',  type=str, default='/home/floraqin/Documents/dvae/training_data/')### x,y,adv_x save diretory
 args = parser.parse_args()
 
 def parseTrainingDatawithAdv(imagePath='/home/floraqin/Documents/lisa-cnn-attack/cropped_training/',
@@ -33,12 +33,12 @@ def parseTrainingDatawithAdv(imagePath='/home/floraqin/Documents/lisa-cnn-attack
         idx = image[-10:-4]
         img = cv2.imread(image)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        print("img.shape: ",img.shape)
         X_train.append(img)
 
         advimg = cv2.imread(AdvPath+idx+'.png')
         advimg = cv2.cvtColor(advimg, cv2.COLOR_BGR2RGB)
         X_Advtrain.append(advimg)
-
         label = labels + idx+'.txt'
         file = open(label,'r')
         ylabel = int(file.readline().split(' ')[0])
@@ -60,6 +60,6 @@ def to_categorical(y, num_classes=None):
     return categorical
 X_train, Y_train, X_Advtrain = parseTrainingDatawithAdv(imagePath=args.imagepath, labels=args.labelpath, AdvPath=args.advpath)
 savedir = args.savedir
-np.save(savedir + 'adv_x.npy', X_Advtrain)
 np.save(savedir + 'xt.npy', X_train)
+np.save(savedir + 'adv_x.npy', X_Advtrain)
 np.save(savedir + 'yt.npy', Y_train)

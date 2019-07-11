@@ -3,8 +3,10 @@ import argparse
 import torch.utils.data
 from torch import optim
 import os
+from dataset import *
 from vae_models import *
 import numpy as np
+from torch.utils import data as data_
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--no-cuda', action='store_true', default=False)
@@ -19,8 +21,8 @@ parser.add_argument('--r_end', type=float, default=0.0)
 parser.add_argument('--sigmoid', type=bool, default=0)
 parser.add_argument('--sigmoid_lambda', type=float, default=10)
 parser.add_argument('--lr', type=float, default=5e-4)
-parser.add_argument('--batch_size', type=int, default=16)
-parser.add_argument('--epochs', type=int, default=5)
+parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--epochs', type=int, default=5000)
 parser.add_argument('--optim', type=int, default=1)
 parser.add_argument('--vae_model', type=int, default=18)
 parser.add_argument('--multi', type=int, default=100)
@@ -28,6 +30,13 @@ parser.add_argument('--cnn_model', type=int, default=4)
 parser.add_argument('--cnn_epochs', type=int, default=20)
 parser.add_argument('--log-interval', type=int, default=10)
 parser.add_argument('--attack_method', type=int, default=1)
+
+
+# parser.add_argument('--imagepath', type=str, default='/vol/bitbucket/wq1918/lisa-cnn-attack/cropped_training/')### 32*32 original image path
+# parser.add_argument('--advpath', type=str, default='/vol/bitbucket/wq1918/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
+
+parser.add_argument('--imagepath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/cropped_training/')### 32*32 original image path
+parser.add_argument('--advpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
 args = parser.parse_args()
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -61,39 +70,61 @@ else:
         r_interval = (args.r_end - args.r_begin) / args.epochs
         r_list = np.arange(args.r_begin, args.r_end, r_interval)
 
+dataset = Dataset(args.imagepath, args.advpath)
+train_data_loader = data_.DataLoader(dataset,
+                              batch_size=args.batch_size,
+                              shuffle=True)
 ### read adv and true
-savedir = base_savedir
-adv_x = np.load(savedir + 'adv_x.npy')
-adv_x = adv_x.transpose(0, 3, 1, 2)
-adv_x = torch.tensor(adv_x).type(torch.FloatTensor)
-
-xt = np.load(savedir + 'xt.npy')
-xt = xt.transpose(0, 3, 1, 2)
-xt = torch.tensor(xt).type(torch.FloatTensor)
-yt = np.load(savedir + 'yt.npy')
-yt = torch.tensor(yt)
-yt = yt.to(device)
-train_data = torch.utils.data.TensorDataset(adv_x, xt)
-train_data_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=False)
+# savedir = base_savedir
+# adv_x = np.load(savedir + 'adv_x.npy')
+# #print("adv_x.shape: ",adv_x.shape)
+# #adv_x = adv_x.transpose(0, 3, 1, 2)
+# #print("adv_x.shape: ",adv_x.shape)
+# adv_x = torch.tensor(adv_x).type(torch.FloatTensor)
+#
+# xt = np.load(savedir + 'xt.npy')
+# #print("xt.shape: ",xt.shape)
+# #xt = xt.transpose(0, 3, 1, 2)
+# #print("xt.shape: ",xt.shape)
+# xt = torch.tensor(xt).type(torch.FloatTensor)
+# yt = np.load(savedir + 'yt.npy')
+# yt = torch.tensor(yt)
+# yt = yt.to(device)
+# train_data = torch.utils.data.TensorDataset(adv_x, xt)
+# train_data_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 import cv2
 def train(epoch, savedir):
+    global best_loss
     model.train()
     train_loss = 0
-
     loss_ll = []
     loss_B = []
     loss_K = []
     for batch_idx, (adv_batch, clean_batch) in enumerate(train_data_loader):
+        #
+        # adv_image = adv_batch.squeeze(0)
+        # print(adv_image.shape)
+        # adv_image = np.array(adv_image).transpose(1,2,0)
+        # adv_image = cv2.cvtColor(adv_image, cv2.COLOR_RGB2BGR)
+        # print("adv_image.shape: ",adv_image.shape)
+        # cv2.imshow("image: ", adv_image)
+        # cv2.waitKey(0)
+        #
+        # clean_image = clean_batch.squeeze(0)
+        # clean_image = np.array(clean_image).transpose(1,2,0)
+        # print("clean_image.shape: ",clean_image.shape)
+        # cv2.imshow("image: ", clean_image)
+        # cv2.waitKey(0)
+        # print("adv: ",np.argwhere(adv_batch>=1))
+        # print("orig: ",np.argwhere(clean_batch>=1))
         adv_batch = adv_batch.to(device)
         clean_batch = clean_batch.to(device)
-
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(adv_batch)
 
         r = torch.tensor(r_list[epoch - 1]).to(device)
         loss, BCE, KLD = loss_lambda(recon_batch, clean_batch, mu, logvar, r)
-
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -103,15 +134,17 @@ def train(epoch, savedir):
                        100. * batch_idx / len(train_data_loader), loss.item() / len(adv_batch)))
         loss_a = loss.item() / len(adv_batch)
         loss_ll.append(loss_a)
-
         loss_b = BCE.item() / len(adv_batch)
         loss_k = KLD.item() / len(adv_batch)
         loss_B.append(loss_b)
         loss_K.append(loss_k)
 
     loss_norm = train_loss / len(train_data_loader.dataset)
+    if best_loss > loss_norm:
+        best_loss = loss_norm
+        torch.save(model.state_dict(), savedir + 'bestmodel.pth')
 
-    torch.save(model.state_dict(), savedir + 'model{}.pth'.format(epoch))
+    # torch.save(model.state_dict(), savedir + 'model{}.pth'.format(epoch))
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(epoch, loss_norm))
     return loss_ll, loss_B, loss_K
@@ -131,6 +164,8 @@ if not os.path.exists(savedir):
 loss_l = []
 loss_bbb = []
 loss_kkk = []
+global best_loss
+best_loss = 9999999
 for epoch in range(1, args.epochs + 1):
     loss, loss1, loss2 = train(epoch, savedir)
     loss_l.append(loss)
