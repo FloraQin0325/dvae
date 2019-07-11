@@ -22,7 +22,7 @@ parser.add_argument('--sigmoid', type=bool, default=0)
 parser.add_argument('--sigmoid_lambda', type=float, default=10)
 parser.add_argument('--lr', type=float, default=5e-4)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--epochs', type=int, default=5000)
+parser.add_argument('--epochs', type=int, default=20000)
 parser.add_argument('--optim', type=int, default=1)
 parser.add_argument('--vae_model', type=int, default=18)
 parser.add_argument('--multi', type=int, default=100)
@@ -148,15 +148,21 @@ def train(epoch, savedir):
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(epoch, loss_norm))
     return loss_ll, loss_B, loss_K
-
+savedir = base_savedir + 'vae_model_lambda/'
 model_dict = {18: VAE18()}
 vae_num = args.vae_model
 model = model_dict[vae_num].to(device)
 
-model.apply(weights_init)
+if os.path.exists(savedir +  'bestmodel.pth'):
+    print("---------- resume training -------------------")
+    model.load_state_dict(torch.load(savedir + 'bestmodel.pth'))
+    model.to(device)
+else:
+    print("---------- start training from scratch -------------------")
+    model.apply(weights_init)
+
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-savedir = base_savedir + 'vae_model_lambda/'
 
 if not os.path.exists(savedir):
     os.makedirs(savedir)
