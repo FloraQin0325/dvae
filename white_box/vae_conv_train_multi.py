@@ -21,7 +21,7 @@ parser.add_argument('--r_end', type=float, default=0.0)
 parser.add_argument('--sigmoid', type=bool, default=0)
 parser.add_argument('--sigmoid_lambda', type=float, default=10)
 parser.add_argument('--lr', type=float, default=5e-4)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--epochs', type=int, default=20000)
 parser.add_argument('--optim', type=int, default=1)
 parser.add_argument('--vae_model', type=int, default=18)
@@ -100,7 +100,7 @@ def train(epoch, savedir):
     loss_ll = []
     loss_B = []
     loss_K = []
-    for batch_idx, (adv_batch, clean_batch) in enumerate(train_data_loader):
+    for batch_idx, (clean_batch, adv_batch) in enumerate(train_data_loader):
         #
         # adv_image = adv_batch.squeeze(0)
         # print(adv_image.shape)
@@ -123,6 +123,23 @@ def train(epoch, savedir):
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(adv_batch)
 
+        recon_image = recon_batch[0].squeeze(0)
+        recon_image = np.array(recon_image.detach().numpy()*255).transpose(1,2,0)
+        recon_image = cv2.cvtColor(recon_image, cv2.COLOR_RGB2BGR)
+
+        clean_image = clean_batch[0].squeeze(0)
+        clean_image = np.array(clean_image.numpy()*255).transpose(1,2,0)
+        clean_image = cv2.cvtColor(clean_image, cv2.COLOR_RGB2BGR)
+        # print(recon_image)
+        if(batch_idx%10==0):
+            # cv2.imshow("image: ", recon_image)
+            # cv2.waitKey(0)
+            cv2.imwrite(savedir+'recon.png', recon_image)
+            cv2.imwrite(savedir+'clean.png', clean_image)
+
+        # print("recon_image.shape: ",recon_image.shape)
+        # cv2.imshow("image: ", recon_image)
+        # cv2.waitKey(0)
         r = torch.tensor(r_list[epoch - 1]).to(device)
         if (np.argwhere(recon_batch<-1)).nelement() != 0:
             print("recon_batch: ",(np.argwhere(recon_batch<0)).nelement())

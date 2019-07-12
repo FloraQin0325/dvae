@@ -115,8 +115,8 @@ class Dataset:
         # ori_img = np.clip(ori_img, -1, 1)
         # adv_img = np.clip(adv_img, -1, 1)
 
-        ori_img = np.clip(ori_img, 0, 1)
-        adv_img = np.clip(adv_img, 0, 1)
+        # ori_img = np.clip(ori_img, 0, 1)
+        # adv_img = np.clip(adv_img, 0, 1)
 
 
         # print(ori_img)
