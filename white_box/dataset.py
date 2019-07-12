@@ -29,8 +29,23 @@ def pytorch_normalze(img):
     #scaler = StandardScaler()
     #img = scaler.fit_transform(img)
     # img = zero_mean_unit_var(img)
-    normalize = tvtsf.Normalize(mean=[0.5, 0.5, 0.5],
-                               std=[0.5, 0.5, 0.5])
+    im_R=img.astype(np.float32)[0,:,:]
+    im_G=img.astype(np.float32)[1,:,:]
+    im_B=img.astype(np.float32)[2,:,:]
+
+    im_R_mean=np.mean(im_R)
+    im_G_mean=np.mean(im_G)
+    im_B_mean=np.mean(im_B)
+
+    im_R_std=np.std(im_R)
+    im_G_std=np.std(im_G)
+    im_B_std=np.std(im_B)
+
+    # std_dev = np.std(img.astype(np.float32),axis=0)
+    # mean = np.mean(img.astype(np.float32),axis=0)
+    # print(im_R_mean)
+    normalize = tvtsf.Normalize(mean=[im_R_mean, im_G_mean, im_B_mean],
+                               std=[im_R_std, im_G_std, im_B_std])
     img = normalize(t.from_numpy(img).float())
     return img.numpy()
     # return img
@@ -41,13 +56,14 @@ def preprocess(img, min_size=300, max_size=1200):
     # scale2 = max_size / max(H, W)
 
     # scale = min(scale1, scale2)
-    img = img / 255.
+    img = img.astype(np.float32) / 255.
     # img = sktsf.resize(img, (C, H * scale, W * scale), mode='reflect', anti_aliasing=False)
     # both the longer and shorter should be less than
     # max_size and min_size
 
-    normalize = pytorch_normalze
-    return normalize(img)
+    # normalize = pytorch_normalze
+    # return normalize(img)
+    return img
 
 
 
@@ -68,13 +84,11 @@ def zero_mean_unit_var(image):
     img_array = (image)
     img_array = img_array.astype(np.float32)
 
-    # mean = np.mean(img_array)
-    # std = np.std(img_array)
-    #
-    # # if std > 0:
-    # img_array = (img_array - mean) / std
+    std_dev = np.std(img_array)
+    mean = np.mean(img_array)
+    normalised_input = (img_array - mean) / std_dev
 
-    image_normalised = img_array/255.
+    image_normalised = normalised_input
 
     return image_normalised
 class Transform(object):
@@ -84,8 +98,8 @@ class Transform(object):
 
     def __call__(self, in_data):
         ori_img, adv_img = in_data
-        ori_img = zero_mean_unit_var(ori_img)
-        adv_img = zero_mean_unit_var(adv_img)
+        ori_img = preprocess(ori_img)
+        adv_img = preprocess(adv_img)
         # horizontally flip
         return ori_img, adv_img
 
@@ -98,8 +112,15 @@ class Dataset:
         # ori_img = ori_img.astype(np.float32)
         # adv_img = adv_img.astype(np.float32)
         ori_img, adv_img = self.tsf((ori_img, adv_img))
+        # ori_img = np.clip(ori_img, -1, 1)
+        # adv_img = np.clip(adv_img, -1, 1)
+
+        ori_img = np.clip(ori_img, 0, 1)
+        adv_img = np.clip(adv_img, 0, 1)
+
+
         # print(ori_img)
-        # print(np.argwhere(ori_img>=1))
+        # print("np.argwhere(ori_img>=1): ",np.argwhere(ori_img>=1))
         # TODO: check whose stride is negative to fix this instead copy all
         # some of the strides of a given numpy array are negative.
         return ori_img.copy(), adv_img.copy()
@@ -115,9 +136,9 @@ class TestDataset:
         ori_img, adv_img = self.db.get_example(idx)
         # ori_img = ori_img.astype(np.float32)
         # adv_img = adv_img.astype(np.float32)
-        img = zero_mean_unit_var(ori_img)
+        img = preprocess(ori_img)
 
-        adv_img = zero_mean_unit_var(adv_img)
+        adv_img = preprocess(adv_img)
         return img, adv_img
 
     def __len__(self):

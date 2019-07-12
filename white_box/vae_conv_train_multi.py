@@ -30,7 +30,7 @@ parser.add_argument('--cnn_model', type=int, default=4)
 parser.add_argument('--cnn_epochs', type=int, default=20)
 parser.add_argument('--log-interval', type=int, default=10)
 parser.add_argument('--attack_method', type=int, default=1)
-
+parser.add_argument('--resume', action='store_true', default=False)
 
 # parser.add_argument('--imagepath', type=str, default='/vol/bitbucket/wq1918/lisa-cnn-attack/cropped_training/')### 32*32 original image path
 # parser.add_argument('--advpath', type=str, default='/vol/bitbucket/wq1918/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
@@ -124,6 +124,10 @@ def train(epoch, savedir):
         recon_batch, mu, logvar = model(adv_batch)
 
         r = torch.tensor(r_list[epoch - 1]).to(device)
+        if (np.argwhere(recon_batch<-1)).nelement() != 0:
+            print("recon_batch: ",(np.argwhere(recon_batch<0)).nelement())
+        if (np.argwhere(clean_batch<-1)).nelement() != 0:
+            print("clean_batch: ",(np.argwhere(clean_batch<-1)).nelement())
         loss, BCE, KLD = loss_lambda(recon_batch, clean_batch, mu, logvar, r)
         loss.backward()
         train_loss += loss.item()
@@ -153,7 +157,7 @@ model_dict = {18: VAE18()}
 vae_num = args.vae_model
 model = model_dict[vae_num].to(device)
 
-if os.path.exists(savedir +  'bestmodel.pth'):
+if os.path.exists(savedir +  'bestmodel.pth') and args.resume:
     print("---------- resume training -------------------")
     model.load_state_dict(torch.load(savedir + 'bestmodel.pth'))
     model.to(device)

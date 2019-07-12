@@ -10,6 +10,10 @@ def loss_lambda(recon_x, x, mu, logvar, r):
 
     # print(np.argwhere(recon_x>=1))
     # print(np.argwhere(x>=1))
+    # criterion = nn.SmoothL1Loss(reduction='mean')
+    # criterion = nn.MSELoss(reduction='mean')  # can we use any other loss here? You are free to choose.
+    # BCE = criterion(recon_x, x)
+
     BCE = F.binary_cross_entropy(recon_x, x, size_average=False)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + r * KLD, BCE, KLD
@@ -44,6 +48,7 @@ class VAE18(nn.Module):
         self.deconv4 = nn.ConvTranspose2d(64, 3, kernel_size=5, stride=1, padding=2, bias=False)
         self.leakyrelu = nn.LeakyReLU(0.2)
         self.relu = nn.ReLU()
+        # self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
 
     def encode(self, x):

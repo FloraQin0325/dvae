@@ -5,11 +5,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dataset', type=int, default=1)
 parser.add_argument('--cnn_model', type=int, default=1)
+
 parser.add_argument('--trainimagepath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/cropped_training/')### 32*32 original image path
 parser.add_argument('--trainadvpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
 parser.add_argument('--trainlabelpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/labels/')### the ground truth labels of 32*32 original image path
 parser.add_argument('--trainsavedir',  type=str, default='/home/floraqin/Documents/defense-vae/training_data/')### x,y,adv_x save diretory
-
+parser.add_argument('--resume', action='store_true', default=False)
 parser.add_argument('--testimagepath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/cropped_training/')### 32*32 original image path
 parser.add_argument('--testadvpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/attacked_cropped_training/')### 32*32 adversarial image path
 parser.add_argument('--testlabelpath', type=str, default='/home/floraqin/Documents/lisa-cnn-attack/labels/')### the ground truth labels of 32*32 original image path
@@ -43,10 +44,14 @@ cnn_model = args.cnn_model
 
 # Training VAE
 print('Start Training VAE')
-os.system("CUDA_VISIBLE_DEVICES={} python vae_conv_train_multi.py "
-          "--dataset {} --cnn_model {}"
-          .format(GPU, dataset, cnn_model))
-
+if args.resume:
+    os.system("CUDA_VISIBLE_DEVICES={} python vae_conv_train_multi.py "
+              "--dataset {} --cnn_model {} --resume"
+              .format(GPU, dataset, cnn_model))
+else:
+    os.system("CUDA_VISIBLE_DEVICES={} python vae_conv_train_multi.py "
+              "--dataset {} --cnn_model {}"
+              .format(GPU, dataset, cnn_model))
 # Reconstruct the testing data
 # print('Start reconstructing adversarial testing images')
 # for attack_method in [1,2,3]:
