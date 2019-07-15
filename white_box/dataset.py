@@ -120,7 +120,8 @@ class Dataset:
 
 
         # print(ori_img)
-        # print("np.argwhere(ori_img>=1): ",np.argwhere(ori_img>=1))
+        # print("np.argwhere(ori_img>=1): ",np.argwhere(ori_img>1))
+        # print("np.argwhere(adv_img>=1): ",np.argwhere(adv_img>1))
         # TODO: check whose stride is negative to fix this instead copy all
         # some of the strides of a given numpy array are negative.
         return ori_img.copy(), adv_img.copy()

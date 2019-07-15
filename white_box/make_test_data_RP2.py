@@ -62,6 +62,7 @@ def to_categorical(y, num_classes=None):
 
 X_test, Y_test, X_Advtest = parseTestingDatawithAdv(imagePath=args.imagepath, labels=args.labelpath, AdvPath=args.advpath)
 savedir = args.savedir
-np.save(savedir + 'adv_x.npy', X_Advtest)
+print("Y_test.shape: ", Y_test.shape)
 np.save(savedir + 'xt.npy', X_test)
+np.save(savedir + 'adv_x.npy', X_Advtest)
 np.save(savedir + 'yt.npy', Y_test)

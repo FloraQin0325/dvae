@@ -141,10 +141,12 @@ def train(epoch, savedir):
         # cv2.imshow("image: ", recon_image)
         # cv2.waitKey(0)
         r = torch.tensor(r_list[epoch - 1]).to(device)
-        if (np.argwhere(recon_batch<-1)).nelement() != 0:
-            print("recon_batch: ",(np.argwhere(recon_batch<0)).nelement())
-        if (np.argwhere(clean_batch<-1)).nelement() != 0:
-            print("clean_batch: ",(np.argwhere(clean_batch<-1)).nelement())
+        # if (np.argwhere(recon_batch<0)).nelement() != 0 or (np.argwhere(recon_batch>1)).nelement() != 0:
+        #     print("recon_batch not in 0to1")
+        #     # print("recon_batch: ",(np.argwhere(recon_batch<0)).nelement())
+        # if (np.argwhere(clean_batch<0)).nelement() != 0 or (np.argwhere(clean_batch>1)).nelement() != 0:
+        #     print("clean_batch not in 0to1")
+            # print("clean_batch: ",(np.argwhere(clean_batch<-1)).nelement())
         loss, BCE, KLD = loss_lambda(recon_batch, clean_batch, mu, logvar, r)
         loss.backward()
         train_loss += loss.item()
@@ -222,5 +224,5 @@ ax.plot(range(loss_numpy1.shape[0]), loss_numpy1)
 fig.savefig(savedir + 'loss_b.png')
 plt.close(fig)
 np.save(savedir + 'loss_b', loss_numpy1)
-
+print("best loss : ", best_loss)
 torch.save(model.state_dict(), savedir + 'model.pth')

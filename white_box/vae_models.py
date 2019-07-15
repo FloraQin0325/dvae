@@ -8,15 +8,20 @@ from torch.nn import functional as F
 def loss_lambda(recon_x, x, mu, logvar, r):
     # print("recon_x.shape,x.shape: ",recon_x.shape,x.shape)
 
+    # print("recon_x: ",np.argwhere(recon_x<0))
+    # print(np.argwhere(x<0))
     # print(np.argwhere(recon_x>=1))
-    # print(np.argwhere(x>=1))
     # criterion = nn.SmoothL1Loss(reduction='mean')
     # criterion = nn.MSELoss(reduction='mean')  # can we use any other loss here? You are free to choose.
     # BCE = criterion(recon_x, x)
-
     BCE = F.binary_cross_entropy(recon_x, x, size_average=False)
+    # print(BCE)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + r * KLD, BCE, KLD
+    # print("BCE: ",BCE)
+    # print("KLD: ", KLD)
+    # print("r*KLD: ",r*KLD)
+    return BCE + KLD, BCE, KLD
+    # return BCE + r * KLD, BCE, KLD
 
 ### 4 convolutional layer
 class VAE18(nn.Module):
